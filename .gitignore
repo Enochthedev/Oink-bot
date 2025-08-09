@@ -10,10 +10,8 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
-<<<<<<< HEAD
 .env.backup
-=======
->>>>>>> 45213f2 (Add initial project structure and configuration files)
+
 
 # Build output
 dist/
