@@ -1,0 +1,54 @@
+{
+  "name": "oink-bot",
+  "version": "1.0.0",
+  "description": "🐷 Oink Bot - A Discord bot that facilitates secure payments between users using multiple payment methods (oink oink!)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node -r tsconfig-paths/register src/index.ts",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:unit": "vitest --run src/**/*.test.ts",
+    "test:integration": "vitest --run src/__tests__/integration/",
+    "test:e2e": "vitest --run src/__tests__/e2e/",
+    "test:performance": "vitest --run src/__tests__/performance/",
+    "test:security": "vitest --run src/__tests__/security/",
+    "test:comprehensive": "vitest --run src/__tests__/TestSuite.test.ts",
+    "test:coverage": "vitest --run --coverage",
+    "test:ci": "vitest --run --coverage --reporter=junit --outputFile=test-results.xml",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "db:seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
+    "db:reset": "npx prisma migrate reset --force && npm run db:seed",
+    "db:studio": "npx prisma studio"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "payments",
+    "cryptocurrency",
+    "ach"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^6.13.0",
+    "@types/node": "^24.2.0",
+    "@types/uuid": "^10.0.0",
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.2.1",
+    "prisma": "^6.13.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "eslint": "^9.32.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

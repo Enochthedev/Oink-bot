@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model UserAccount {
+  id                      String                 @id @default(cuid())
+  discordId               String                 @unique
+  transactionHistoryJson  String                 @default("[]")
+  enableDMNotifications   Boolean                @default(true)
+  enableChannelNotifications Boolean             @default(false)
+  isSetupComplete         Boolean                @default(false)
+  isPublicProfile         Boolean                @default(false)
+  lastActivityAt          DateTime?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  
+  // Relations
+  paymentMethods          PaymentMethodConfig[]
+  sentTransactions        Transaction[]          @relation("SenderTransactions")
+  receivedTransactions    Transaction[]          @relation("RecipientTransactions")
+  sentPaymentRequests     PaymentRequest[]       @relation("RequesterPaymentRequests")
+  receivedPaymentRequests PaymentRequest[]       @relation("PayerPaymentRequests")
+  
+  @@map("user_accounts")
+}
+
+model PaymentMethodConfig {
+  id                String           @id @default(cuid())
+  userId            String
+  type              PaymentMethodType
+  displayName       String
+  encryptedDetails  String           // Tokenized payment details
+  isActive          Boolean          @default(true)
+  addedAt           DateTime         @default(now())
+  
+  // Relations
+  user              UserAccount      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  senderTransactions Transaction[]   @relation("SenderPaymentMethod")
+  recipientTransactions Transaction[] @relation("RecipientPaymentMethod")
+  
+  @@map("payment_method_configs")
+}
+
+model Transaction {
+  id                    String            @id @default(cuid())
+  senderId              String
+  recipientId           String
+  amount                Float
+  currency              String            @default("USD")
+  senderPaymentMethodId String
+  recipientPaymentMethodId String?
+  status                TransactionStatus @default(PENDING)
+  processingFee         Float             @default(0)
+  escrowFee             Float             @default(0)
+  totalFees             Float             @default(0)
+  createdAt             DateTime          @default(now())
+  completedAt           DateTime?
+  failureReason         String?
+  
+  // Relations
+  sender                UserAccount       @relation("SenderTransactions", fields: [senderId], references: [id])
+  recipient             UserAccount       @relation("RecipientTransactions", fields: [recipientId], references: [id])
+  senderPaymentMethod   PaymentMethodConfig @relation("SenderPaymentMethod", fields: [senderPaymentMethodId], references: [id])
+  recipientPaymentMethod PaymentMethodConfig? @relation("RecipientPaymentMethod", fields: [recipientPaymentMethodId], references: [id])
+  escrowRecord          EscrowRecord?
+  paymentRequest        PaymentRequest?
+  
+  @@map("transactions")
+}
+
+model ServerConfig {
+  id                    String              @id @default(cuid())
+  serverId              String              @unique
+  paymentsEnabled       Boolean             @default(true)
+  maxAmountPerUser      Float               @default(1000)
+  maxTransactionsPerUser Int                @default(10)
+  allowedPaymentMethodsJson String          @default("[\"CRYPTO\",\"ACH\",\"OTHER\"]") // JSON array
+  adminUserIdsJson      String              @default("[]") // JSON array of Discord user IDs
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  @@map("server_configs")
+}
+
+model EscrowRecord {
+  id                    String        @id @default(cuid())
+  transactionId         String        @unique
+  amount                Float
+  currency              String        @default("USD")
+  paymentMethod         PaymentMethodType
+  externalTransactionId String
+  status                EscrowStatus  @default(HOLDING)
+  createdAt             DateTime      @default(now())
+  releaseAt             DateTime?
+  
+  // Relations
+  transaction           Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  
+  @@map("escrow_records")
+}
+
+enum PaymentMethodType {
+  CRYPTO
+  ACH
+  OTHER
+}
+
+enum TransactionStatus {
+  PENDING
+  ESCROWED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model PaymentRequest {
+  id            String               @id @default(cuid())
+  requesterId   String
+  payerId       String
+  amount        Float
+  currency      String               @default("USD")
+  description   String
+  status        PaymentRequestStatus @default(PENDING)
+  serverId      String?
+  expiresAt     DateTime
+  createdAt     DateTime             @default(now())
+  respondedAt   DateTime?
+  transactionId String?              @unique
+  
+  // Relations
+  requester     UserAccount          @relation("RequesterPaymentRequests", fields: [requesterId], references: [id])
+  payer         UserAccount          @relation("PayerPaymentRequests", fields: [payerId], references: [id])
+  transaction   Transaction?         @relation(fields: [transactionId], references: [id])
+  
+  @@map("payment_requests")
+}
+
+enum PaymentRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+enum EscrowStatus {
+  HOLDING
+  RELEASED
+  RETURNED
+}
